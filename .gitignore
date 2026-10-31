@@ -1,0 +1,16 @@
+# dependencies and build output
+node_modules/
+dist/
+*.tsbuildinfo
+.vite/
+
+# secrets / local config (commit .env.example only)
+.env
+.env.*
+!.env.example
+
+# logs, editors, OS
+*.log
+.vscode/
+.idea/
+.DS_Store
