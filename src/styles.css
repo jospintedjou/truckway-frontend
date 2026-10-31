@@ -601,7 +601,7 @@ h3 {
   color: var(--muted);
 }
 .trip.desktop .lite-badge {
-  left: 426px;
+  left: var(--panel-w);
 }
 .lite-notice {
   position: absolute;
@@ -629,7 +629,7 @@ h3 {
   color: var(--muted);
 }
 .trip.desktop .lite-notice {
-  left: 426px;
+  left: var(--panel-w);
   right: auto;
   max-width: 460px;
 }
@@ -1108,8 +1108,66 @@ h3 {
   overflow-y: auto;
   padding: 16px;
 }
+.trip.desktop {
+  --panel-w: 426px;
+}
+.trip.desktop.panel-off {
+  --panel-w: 16px;
+}
+.trip.desktop .topbar,
+.trip.desktop .slider-wrap,
+.trip.desktop .lite-badge,
+.trip.desktop .lite-notice {
+  transition: left 0.25s ease;
+}
+.panel {
+  transition: transform 0.25s ease, visibility 0s;
+}
+.panel.collapsed {
+  transform: translateX(-100%);
+  visibility: hidden;
+  transition: transform 0.25s ease, visibility 0s 0.25s;
+}
+.panel-toggle {
+  position: absolute;
+  z-index: 16;
+  top: 50%;
+  left: 410px;
+  width: 24px;
+  height: 64px;
+  margin-top: -32px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  color: var(--text);
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-left: none;
+  border-radius: 0 10px 10px 0;
+  cursor: pointer;
+  transition: left 0.25s ease, background 0.15s;
+}
+.trip.panel-off .panel-toggle {
+  left: 0;
+}
+.panel-toggle:hover {
+  background: var(--panel-2);
+}
+.panel-toggle:focus-visible {
+  outline: 2px solid var(--teal);
+  outline-offset: 2px;
+}
+.panel-toggle svg {
+  width: 16px;
+  height: 16px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2.4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
 .trip.desktop .topbar {
-  left: 426px;
+  left: var(--panel-w);
   right: 64px; /* leaves room for the zoom buttons */
   top: 16px;
 }
@@ -1118,7 +1176,7 @@ h3 {
   max-width: 560px;
 }
 .trip.desktop .slider-wrap {
-  left: 426px;
+  left: var(--panel-w);
   right: 16px;
   bottom: 20px;
 }

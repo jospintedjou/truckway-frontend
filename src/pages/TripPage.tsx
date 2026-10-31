@@ -37,6 +37,7 @@ function TripView({ plan }: { plan: Plan }) {
   const [corridorError, setCorridorError] = useState<string | null>(null);
   const [sheetH, setSheetH] = useState(PEEK_PX);
   const [editing, setEditing] = useState(false);
+  const [panelHidden, setPanelHidden] = useState(false);
   // WebGL map by default; the 2D simple map when WebGL is unavailable (or forced with ?map=lite)
   const [lite] = useState(() => liteMapRequested() || !webglSupported());
 
@@ -58,8 +59,11 @@ function TripView({ plan }: { plan: Plan }) {
   const heatOffset = corridor ? (Date.parse(plan.trip.departure) - Date.parse(corridor.start)) / 3_600_000 : 0;
 
   const padding = useMemo<MapPadding>(
-    () => (desktop ? { top: 110, bottom: 200, left: 460, right: 70 } : { top: 110, bottom: PEEK_PX + 190, left: 30, right: 30 }),
-    [desktop],
+    () =>
+      desktop
+        ? { top: 110, bottom: 200, left: panelHidden ? 70 : 460, right: 70 }
+        : { top: 110, bottom: PEEK_PX + 190, left: 30, right: 30 },
+    [desktop, panelHidden],
   );
 
   const selectCheckpoint = useCallback(
@@ -117,6 +121,7 @@ function TripView({ plan }: { plan: Plan }) {
 
   const toggleHeat = useCallback(() => setShowHeat((v) => !v), []);
   const closeEdit = useCallback(() => setEditing(false), []);
+  const togglePanel = useCallback(() => setPanelHidden((v) => !v), []);
 
   // One line telling the driver what the risk map holds, so an empty map reads as "calm", not "broken".
   const heatStatus = useMemo(() => {
@@ -154,7 +159,9 @@ function TripView({ plan }: { plan: Plan }) {
   };
 
   return (
-    <div className={`trip ${desktop ? "desktop" : "mobile"}`} style={{ "--sheet-h": `${sheetH}px` } as CSSProperties}>
+    <div
+      className={`trip ${desktop ? "desktop" : "mobile"}${desktop && panelHidden ? " panel-off" : ""}`}
+      style={{ "--sheet-h": `${sheetH}px` } as CSSProperties}>
       <MapErrorBoundary fallback={<LiteMapLazy {...mapProps} />}>
         {lite ? <LiteMapLazy {...mapProps} /> : <TripMap {...mapProps} />}
       </MapErrorBoundary>
@@ -205,7 +212,12 @@ function TripView({ plan }: { plan: Plan }) {
         />
       </div>
 
-      <BottomSheet desktop={desktop} onHeightChange={setSheetH}>
+      <BottomSheet
+        desktop={desktop}
+        onHeightChange={setSheetH}
+        collapsed={panelHidden}
+        onToggleCollapsed={togglePanel}
+      >
         {details}
       </BottomSheet>
 

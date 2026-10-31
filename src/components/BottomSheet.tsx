@@ -18,16 +18,20 @@ const snaps = () => [PEEK_PX, Math.round(window.innerHeight * 0.5), Math.round(w
 
 /**
  * Mobile: a draggable sheet with three snap points (verdict, routes, full timeline).
- * Desktop: the same content in a side panel.
+ * Desktop: the same content in a side panel that can be hidden to free the map.
  */
 export function BottomSheet({
   children,
   desktop,
   onHeightChange,
+  collapsed = false,
+  onToggleCollapsed,
 }: {
   children: ReactNode;
   desktop: boolean;
   onHeightChange?: (px: number) => void;
+  collapsed?: boolean;
+  onToggleCollapsed?: () => void;
 }) {
   const [height, setHeight] = useState(PEEK_PX);
   const [dragging, setDragging] = useState(false);
@@ -35,7 +39,27 @@ export function BottomSheet({
 
   useEffect(() => onHeightChange?.(desktop ? 0 : height), [height, desktop, onHeightChange]);
 
-  if (desktop) return <aside className="panel">{children}</aside>;
+  if (desktop)
+    return (
+      <>
+        <aside id="trip-panel" className={`panel${collapsed ? " collapsed" : ""}`} aria-label="Trip details">
+          {children}
+        </aside>
+        <button
+          type="button"
+          className="panel-toggle"
+          onClick={onToggleCollapsed}
+          aria-controls="trip-panel"
+          aria-expanded={!collapsed}
+          aria-label={collapsed ? "Show trip details" : "Hide trip details"}
+          title={collapsed ? "Show trip details" : "Hide trip details"}
+        >
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d={collapsed ? "M9 6l6 6-6 6" : "M15 6l-6 6 6 6"} />
+          </svg>
+        </button>
+      </>
+    );
 
   const snapTo = (h: number) => {
     const s = snaps();
