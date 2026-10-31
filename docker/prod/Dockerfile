@@ -1,8 +1,15 @@
+# syntax=docker/dockerfile:1
 FROM node:20-slim AS build
 WORKDIR /app
 
-COPY package*.json ./
-RUN npm install --no-audit --no-fund
+COPY package.json package-lock.json ./
+# npm ci installs exactly the lockfile; retries ride out flaky connections,
+# and the cache mount keeps downloaded packages between rebuilds
+RUN --mount=type=cache,target=/root/.npm \
+    npm config set fetch-retries 5 && \
+    npm config set fetch-retry-mintimeout 20000 && \
+    npm config set fetch-retry-maxtimeout 120000 && \
+    npm ci --no-audit --no-fund
 
 COPY . .
 

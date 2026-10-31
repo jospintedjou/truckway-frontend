@@ -535,30 +535,156 @@ h3 {
   inset: 0;
   width: 100%;
   height: 100%;
+  z-index: 0; /* own stacking context: map engines' internal z-indexes stay under the app panels */
 }
-.map-fallback {
-  display: flex;
-  align-items: flex-start;
-  justify-content: center;
-  padding: 190px 16px 0;
-  background: var(--bg-deep);
+/* map controls, both engines */
+.maplibregl-ctrl-group,
+.leaflet-bar {
+  background: rgba(17, 36, 59, 0.94) !important;
+  border: 1px solid var(--line) !important;
+  border-radius: 10px !important;
+  box-shadow: none !important;
+  overflow: hidden;
 }
-.trip.desktop .map-fallback {
-  padding-left: 426px;
+.maplibregl-ctrl-group button + button {
+  border-top: 1px solid var(--line) !important;
 }
-.map-fallback-card {
-  max-width: 420px;
-  background: var(--panel);
+.maplibregl-ctrl-group button .maplibregl-ctrl-icon {
+  filter: invert(1) brightness(0.85);
+}
+.leaflet-bar a {
+  background: transparent !important;
+  color: var(--text) !important;
+  border-color: var(--line) !important;
+}
+.trip.desktop .maplibregl-ctrl-top-right,
+.trip.desktop .leaflet-top.leaflet-right {
+  top: 6px;
+  right: 6px;
+}
+.trip.mobile .maplibregl-ctrl-top-right,
+.trip.mobile .leaflet-control-zoom {
+  display: none;
+}
+
+/* simple (non-WebGL) map */
+.lite-map-canvas {
+  position: absolute;
+  inset: 0;
+}
+.lite-map .leaflet-container,
+.lite-map-canvas.leaflet-container {
+  background: var(--bg);
+  font-family: var(--font);
+}
+/* light OSM tiles turned into a dark navy basemap */
+.lite-map .leaflet-tile-pane {
+  filter: invert(1) hue-rotate(185deg) brightness(0.75) contrast(0.9) saturate(0.6);
+}
+.leaflet-control-attribution {
+  background: rgba(11, 26, 46, 0.7) !important;
+  color: var(--muted) !important;
+}
+.leaflet-control-attribution a {
+  color: var(--muted) !important;
+}
+.lite-badge {
+  position: absolute;
+  z-index: 500;
+  top: 84px;
+  left: 12px;
+  font-size: 11px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: rgba(17, 36, 59, 0.94);
   border: 1px solid var(--line);
-  border-radius: 16px;
-  padding: 16px;
+  color: var(--muted);
 }
-.map-fallback-card h2 {
-  font-size: 16px;
+.trip.desktop .lite-badge {
+  left: 426px;
 }
-.map-fallback-card p {
-  margin: 8px 0 0;
+.lite-notice {
+  position: absolute;
+  z-index: 600;
+  top: 84px;
+  left: 10px;
+  right: 10px;
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+  background: rgba(17, 36, 59, 0.97);
+  border: 1px solid rgba(253, 186, 116, 0.5);
+  border-radius: 14px;
+  padding: 10px 8px 10px 14px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
   font-size: 13px;
+  animation: notice-in 0.25s ease;
+}
+.lite-notice strong {
+  color: var(--amber);
+  font-weight: 600;
+}
+.lite-notice p {
+  margin: 2px 0 0;
+  color: var(--muted);
+}
+.trip.desktop .lite-notice {
+  left: 426px;
+  right: auto;
+  max-width: 460px;
+}
+@keyframes notice-in {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+}
+.lite-tag {
+  background: none;
+  border: 0;
+}
+.lite-tag span {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  white-space: nowrap;
+  font: 600 12px var(--font);
+  padding: 3px 8px;
+  border-radius: 6px;
+  background: rgba(30, 53, 80, 0.94);
+  color: var(--text);
+}
+.lite-tag.selected span {
+  background: var(--teal-strong);
+  color: var(--teal-ink);
+}
+.lite-tag.blocked span {
+  background: rgba(90, 20, 36, 0.94);
+}
+.lite-tag.blocked.selected span {
+  background: var(--danger);
+  color: #fff;
+}
+.lite-tag.place span {
+  transform: translate(-50%, -170%);
+  background: rgba(11, 26, 46, 0.92);
+  border: 1px solid rgba(230, 240, 245, 0.6);
+}
+.lite-tag.place.destination span {
+  border-color: var(--coral);
+}
+.lite-tag.storm span {
+  transform: translate(-50%, -180%);
+  background: rgba(17, 36, 59, 0.94);
+  border: 1px solid currentColor;
+}
+.lite-tag.level-2 span {
+  color: #fb923c;
+}
+.lite-tag.level-3 span {
+  color: #e8590c;
+}
+.lite-tag.level-4 span {
+  color: #ff2d55;
 }
 
 .maplibregl-ctrl-attrib {
@@ -645,7 +771,8 @@ h3 {
   overflow: hidden;
   text-overflow: ellipsis;
 }
-.tp-load {
+.tp-load,
+.tp-demo {
   color: var(--amber);
 }
 .topbar-row {
@@ -983,7 +1110,7 @@ h3 {
 }
 .trip.desktop .topbar {
   left: 426px;
-  right: 16px;
+  right: 64px; /* leaves room for the zoom buttons */
   top: 16px;
 }
 .trip.desktop .trip-pill {

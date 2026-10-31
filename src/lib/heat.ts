@@ -43,9 +43,9 @@ export function cellColor(c: Corridor, cell: number, hour: number): RGBA {
 export function cellPolygon(c: Corridor, cell: number): [number, number][] {
   const lat = c.cells.lat[cell];
   const lon = c.cells.lon[cell];
-  // slightly oversized cells overlap and read as a continuous field
-  const hy = (c.cells.dlat / 2) * 1.04;
-  const hx = (c.cells.dlon / 2) * 1.04;
+  // exact tiling: overlapping translucent cells would draw darker seams
+  const hy = c.cells.dlat / 2;
+  const hx = c.cells.dlon / 2;
   return [
     [lon - hx, lat - hy],
     [lon + hx, lat - hy],

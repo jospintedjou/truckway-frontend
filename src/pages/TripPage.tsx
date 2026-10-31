@@ -4,10 +4,10 @@ import { api, ApiError, type Corridor, type Plan } from "../api";
 import { BottomSheet, PEEK_PX, useIsDesktop } from "../components/BottomSheet";
 import { EditTripDialog } from "../components/EditTripDialog";
 import { ForecastSlider } from "../components/ForecastSlider";
-import { MapErrorBoundary } from "../components/MapFallback";
+import { LiteMapLazy, liteMapRequested, MapErrorBoundary, webglSupported } from "../components/MapFallback";
 import { RouteCard } from "../components/RouteCard";
 import { CheckpointCard, Timeline, Verdict } from "../components/TripDetails";
-import { TripMap, type MapPadding } from "../components/TripMap";
+import { TripMap, type MapPadding, type MapProps } from "../components/TripMap";
 import { fmtLb, LEVELS } from "../lib/risk";
 import { fmtDateTime } from "../lib/time";
 import { hourlyTrack } from "../lib/track";
@@ -37,6 +37,8 @@ function TripView({ plan }: { plan: Plan }) {
   const [corridorError, setCorridorError] = useState<string | null>(null);
   const [sheetH, setSheetH] = useState(PEEK_PX);
   const [editing, setEditing] = useState(false);
+  // WebGL map by default; the 2D simple map when WebGL is unavailable (or forced with ?map=lite)
+  const [lite] = useState(() => liteMapRequested() || !webglSupported());
 
   // The heatmap loads after the routes are already on screen.
   useEffect(() => {
@@ -132,26 +134,29 @@ function TripView({ plan }: { plan: Plan }) {
     }
     if (worst <= 0) return "Calm along the whole corridor for the next 48 h.";
     const at = Math.max(0, Math.round(first - heatOffset));
-    return `Up to ${LEVELS[worst].name} on the corridor, first risk at +${at}h. Press play to watch it move.`;
+    const when = at === 0 ? "from departure" : `from +${at}h`;
+    return `Up to ${LEVELS[worst].name} on the corridor, ${when}. Press play to watch it move.`;
   }, [corridor, corridorError, heatOffset]);
 
   const cpRoute = selectedCp ? plan.routes.find((r) => r.id === selectedCp.route) : undefined;
 
+  const mapProps: MapProps = {
+    plan,
+    corridor,
+    hour,
+    heatHour: hour + heatOffset,
+    showHeat,
+    selectedRoute,
+    selectedCheckpoint: selectedCp,
+    padding,
+    onSelectCheckpoint: selectCheckpoint,
+    onSelectRoute: selectRoute,
+  };
+
   return (
     <div className={`trip ${desktop ? "desktop" : "mobile"}`} style={{ "--sheet-h": `${sheetH}px` } as CSSProperties}>
-      <MapErrorBoundary>
-        <TripMap
-          plan={plan}
-          corridor={corridor}
-          hour={hour}
-          heatHour={hour + heatOffset}
-          showHeat={showHeat}
-          selectedRoute={selectedRoute}
-          selectedCheckpoint={selectedCp}
-          padding={padding}
-          onSelectCheckpoint={selectCheckpoint}
-          onSelectRoute={selectRoute}
-        />
+      <MapErrorBoundary fallback={<LiteMapLazy {...mapProps} />}>
+        {lite ? <LiteMapLazy {...mapProps} /> : <TripMap {...mapProps} />}
       </MapErrorBoundary>
 
       <header className="topbar">
@@ -163,6 +168,7 @@ function TripView({ plan }: { plan: Plan }) {
             <span className="tp-meta">
               {fmtDateTime(plan.trip.departure, plan.trip.timezone)} ·{" "}
               <span className="tp-load">{fmtLb(plan.trip.load_lb)}</span> · every {plan.trip.interval_mi} mi
+              {plan.trip.scenario && <span className="tp-demo"> · demo storm</span>}
             </span>
           </span>
           <span className="tp-edit" aria-hidden="true">
@@ -172,11 +178,6 @@ function TripView({ plan }: { plan: Plan }) {
             </svg>
           </span>
         </button>
-        {plan.trip.scenario && (
-          <div className="topbar-row">
-            <span className="demo-chip">Demo storm (synthetic)</span>
-          </div>
-        )}
       </header>
 
       {cpRoute && selectedCp && (

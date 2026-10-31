@@ -7,7 +7,7 @@ import type { Corridor, Level, Plan, Route } from "../api";
 import { cellColor, cellPolygon, stormLabels } from "../lib/heat";
 import { LEVELS, levelRgb } from "../lib/risk";
 import { positionAt } from "../lib/track";
-import { MapFallback, webglSupported } from "./MapFallback";
+import { LiteMapLazy, webglSupported } from "./MapFallback";
 
 const STYLE = "https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json";
 const TEAL: [number, number, number] = [94, 234, 212];
@@ -21,7 +21,7 @@ export interface MapPadding {
   right: number;
 }
 
-interface Props {
+export interface MapProps {
   plan: Plan;
   corridor: Corridor | null;
   /** hours since departure */
@@ -84,7 +84,7 @@ interface CpDatum {
   selectedRoute: boolean;
 }
 
-function TripMapInner(props: Props) {
+function TripMapInner(props: MapProps) {
   const { plan, corridor, hour, heatHour, showHeat, selectedRoute, selectedCheckpoint, padding } = props;
   const container = useRef<HTMLDivElement>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
@@ -393,7 +393,8 @@ function TripMapInner(props: Props) {
     labels,
   ]);
 
-  if (mapFailed) return <MapFallback />;
+  // WebGL could not start (blocked by the browser or GPU driver): switch to the 2D canvas map.
+  if (mapFailed) return <LiteMapLazy {...props} />;
   return <div ref={container} className="map" />;
 }
 

@@ -1,4 +1,5 @@
-import { Component, type ErrorInfo, type ReactNode } from "react";
+import { Component, lazy, Suspense, type ErrorInfo, type ReactNode } from "react";
+import type { MapProps } from "./TripMap";
 
 /** True when the browser can create a WebGL context (needed by MapLibre and deck.gl). */
 export function webglSupported(): boolean {
@@ -10,26 +11,24 @@ export function webglSupported(): boolean {
   }
 }
 
-/** Shown in place of the map when it can't be drawn. The routes, verdict and timeline still work. */
-export function MapFallback() {
+/** Force the simple map with `?map=lite` (handy for testing and demos). */
+export function liteMapRequested(): boolean {
+  return new URLSearchParams(window.location.search).get("map") === "lite";
+}
+
+// Leaflet is only downloaded when the simple map is actually needed.
+const LiteMap = lazy(() => import("./LiteMap"));
+
+export function LiteMapLazy(props: MapProps) {
   return (
-    <div className="map map-fallback" role="note">
-      <div className="map-fallback-card">
-        <h2>The map can't be shown in this browser</h2>
-        <p className="muted">
-          It needs WebGL, which is turned off or blocked here (often hardware acceleration is disabled, or the browser runs
-          in a virtual machine or remote desktop). The recommendation, routes and checkpoint timeline below still work.
-        </p>
-        <p className="muted small">
-          To fix it: turn on hardware acceleration in your browser settings and restart it, or try another browser.
-        </p>
-      </div>
-    </div>
+    <Suspense fallback={<div className="map" />}>
+      <LiteMap {...props} />
+    </Suspense>
   );
 }
 
-/** Keeps a map crash (WebGL context lost, driver error) from blanking the whole page. */
-export class MapErrorBoundary extends Component<{ children: ReactNode }, { failed: boolean }> {
+/** If the WebGL map crashes after start-up (context lost, driver error), swap in the simple map. */
+export class MapErrorBoundary extends Component<{ children: ReactNode; fallback: ReactNode }, { failed: boolean }> {
   state = { failed: false };
 
   static getDerivedStateFromError() {
@@ -37,10 +36,10 @@ export class MapErrorBoundary extends Component<{ children: ReactNode }, { faile
   }
 
   componentDidCatch(error: Error, info: ErrorInfo) {
-    console.warn("Map crashed", error, info.componentStack);
+    console.warn("Map crashed, switching to the simple map", error, info.componentStack);
   }
 
   render() {
-    return this.state.failed ? <MapFallback /> : this.props.children;
+    return this.state.failed ? this.props.fallback : this.props.children;
   }
 }
