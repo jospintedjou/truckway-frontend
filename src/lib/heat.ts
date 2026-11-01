@@ -1,4 +1,4 @@
-import type { Corridor } from "../api";
+import type { Corridor, Level } from "../api";
 import { LEVELS } from "./risk";
 
 export type RGBA = [number, number, number, number];
@@ -93,4 +93,20 @@ export function stormLabels(c: Corridor, hour: number, max = 2): StormLabel[] {
     if (picked.length >= max) break;
   }
   return picked;
+}
+
+/**
+ * Worst level anywhere on the corridor during each slider hour 0..hours (`offset` maps
+ * slider hours to corridor frames). Null when no cell has data in that hour.
+ */
+export function corridorWorstByHour(c: Corridor, hours: number, offset: number): (Level | null)[] {
+  const n = c.cells.lat.length;
+  const clamp = (f: number) => Math.min(c.hours - 1, Math.max(0, f));
+  return Array.from({ length: hours + 1 }, (_, h) => {
+    let worst = -1;
+    for (let f = clamp(Math.floor(h + offset)); f <= clamp(Math.ceil(h + 1 + offset)); f++) {
+      for (let i = 0; i < n; i++) worst = Math.max(worst, c.levels[f * n + i]);
+    }
+    return worst < 0 ? null : (worst as Level);
+  });
 }

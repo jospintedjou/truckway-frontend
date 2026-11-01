@@ -15,6 +15,8 @@ interface Props {
   timezone: string;
   /** risk the selected truck meets each hour; undefined after arrival */
   track: (Level | null | undefined)[];
+  /** worst risk anywhere on the corridor each hour; fills the strip after the truck arrives */
+  corridorTrack?: (Level | null)[] | null;
   routeId: string;
   showHeat: boolean;
   onToggleHeat: () => void;
@@ -27,7 +29,7 @@ interface Props {
  * and where each truck would be. Its track is the risk timeline of the selected truck.
  */
 export function ForecastSlider(props: Props) {
-  const { hour, onHour, playing, onPlaying, departure, timezone, track, routeId } = props;
+  const { hour, onHour, playing, onPlaying, departure, timezone, track, corridorTrack, routeId } = props;
   const raf = useRef(0);
   const hourRef = useRef(hour);
   hourRef.current = hour;
@@ -38,9 +40,10 @@ export function ForecastSlider(props: Props) {
     const tick = (now: number) => {
       const next = hourRef.current + ((now - last) / 1000) * PLAY_HOURS_PER_SECOND;
       last = now;
+      // end of the window: stop and rewind so the trucks are back at the start
       if (next >= HOURS) {
-        onHour(HOURS);
         onPlaying(false);
+        onHour(0);
         return;
       }
       onHour(next);
@@ -51,7 +54,10 @@ export function ForecastSlider(props: Props) {
   }, [playing, onHour, onPlaying]);
 
   const at = new Date(new Date(departure).getTime() + hour * 3600_000);
-  const now = track[Math.min(track.length - 1, Math.floor(hour))];
+  const idx = Math.min(track.length - 1, Math.floor(hour));
+  const now = track[idx];
+  const corridorNow = corridorTrack?.[idx];
+  const arrivedAt = track.findIndex((lv) => lv === undefined);
 
   return (
     <div className="slider">
@@ -83,7 +89,15 @@ export function ForecastSlider(props: Props) {
             </span>
             <span className="slider-now">
               {now === undefined ? (
-                `Route ${routeId} arrived`
+                <>
+                  Route {routeId} arrived
+                  {corridorNow != null && (
+                    <>
+                      {" "}
+                      · corridor: <b style={{ color: levelHex(corridorNow) }}>{levelName(corridorNow)}</b>
+                    </>
+                  )}
+                </>
               ) : (
                 <>
                   Route {routeId} truck: <b style={{ color: levelHex(now) }}>{levelName(now)}</b>
@@ -93,9 +107,18 @@ export function ForecastSlider(props: Props) {
           </div>
           <div className="scrub">
             <div className="strip" aria-hidden="true">
-              {track.map((lv, i) => (
-                <i key={i} style={{ background: lv === undefined ? "#22344B" : levelHex(lv) }} />
-              ))}
+              {track.map((lv, i) => {
+                // solid: what the truck meets; faded after arrival: worst risk on the corridor
+                if (lv !== undefined) return <i key={i} style={{ background: levelHex(lv) }} />;
+                const c = corridorTrack?.[i];
+                return (
+                  <i
+                    key={i}
+                    className={`after${i === arrivedAt ? " arrive" : ""}`}
+                    style={{ background: c == null ? "#22344B" : levelHex(c) }}
+                  />
+                );
+              })}
             </div>
             <div className="thumb" style={{ left: `${(hour / HOURS) * 100}%` }} aria-hidden="true" />
             <input

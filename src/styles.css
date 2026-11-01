@@ -1033,6 +1033,12 @@ h3 {
 .strip i {
   flex: 1;
 }
+.strip i.after {
+  opacity: 0.4;
+}
+.strip i.arrive {
+  box-shadow: inset 2px 0 0 #fff;
+}
 .thumb {
   position: absolute;
   width: 4px;

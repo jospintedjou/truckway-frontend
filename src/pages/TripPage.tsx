@@ -8,6 +8,7 @@ import { LiteMapLazy, liteMapRequested, MapErrorBoundary, webglSupported } from 
 import { RouteCard } from "../components/RouteCard";
 import { CheckpointCard, Timeline, Verdict } from "../components/TripDetails";
 import { TripMap, type MapPadding, type MapProps } from "../components/TripMap";
+import { corridorWorstByHour } from "../lib/heat";
 import { fmtLb, LEVELS } from "../lib/risk";
 import { fmtDateTime } from "../lib/time";
 import { hourlyTrack } from "../lib/track";
@@ -143,6 +144,11 @@ function TripView({ plan }: { plan: Plan }) {
     return `Up to ${LEVELS[worst].name} on the corridor, ${when}. Press play to watch it move.`;
   }, [corridor, corridorError, heatOffset]);
 
+  const corridorTrack = useMemo(
+    () => (corridor ? corridorWorstByHour(corridor, HOURS, heatOffset) : null),
+    [corridor, heatOffset],
+  );
+
   const cpRoute = selectedCp ? plan.routes.find((r) => r.id === selectedCp.route) : undefined;
 
   const mapProps: MapProps = {
@@ -205,6 +211,7 @@ function TripView({ plan }: { plan: Plan }) {
           departure={plan.trip.departure}
           timezone={plan.trip.timezone}
           track={track}
+          corridorTrack={showHeat ? corridorTrack : null}
           routeId={route.id}
           showHeat={showHeat}
           onToggleHeat={toggleHeat}
